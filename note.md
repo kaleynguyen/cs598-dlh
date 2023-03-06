@@ -1,5 +1,9 @@
-# LInks
-[]https://drive.google.com/drive/folders/1wRpt0L1YxUA9VIeVZbPMlNLcNIiVwYK_
+# Links
+[Lab solution]https://drive.google.com/drive/folders/1wRpt0L1YxUA9VIeVZbPMlNLcNIiVwYK_
+[project instruction]https://www.overleaf.com/project/63f3d5b99a8e992a6db47d13
+[Dive into deep learning]https://d2l.ai
+
+
 # Lab 1
 
 ### basic
