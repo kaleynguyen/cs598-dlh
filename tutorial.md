@@ -108,6 +108,7 @@ w.grad #-2
 import numpy as np
 X = np.array([1,2,3,4], dtype=np.float32)
 Y = np.array([2,4,6,8], dtype=np.float32)
+w = np.zeros_like(X, dtype=np.float32)
 
 def forward(x):
       return w * x
@@ -115,9 +116,9 @@ def loss(y, y_hat):
       return ((y - y_hat)**2).mean()
 def gradient(x, y, y_hat):
       return np.dot(2*x, y_hat-y).mean()
-print(f'Prediction before training: {forward(5): 0.3f}')
+print(f'Prediction before training: {forward(X)}')
 learning_rate = 0.01
-n_iters = 20
+n_iters = 5
 for epoch in range(n_iters):
       # prediction: forward pass
       y_pred = forward(X)
@@ -127,9 +128,7 @@ for epoch in range(n_iters):
       dw = gradient(X, Y, y_pred)
       # update weights
       w -= learning_rate * dw
-      if epoch % 2 == 0:
-            print('epoch {0}: w = {1:0.3f}, loss = {2:0.5f}'.format(epoch+1, w, l))
-print(f'Prediction after training: {forward(5): 0.3f}')
+print(f'Prediction after training: {forward(X)}')
 ```
 
 
