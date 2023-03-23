@@ -62,12 +62,17 @@ print(f"Shape of rhythm feature: {train_dict['K_rhythm'][:, 0, :].shape} = (#cha
 print(f"Shape of frequency feature: {train_dict['K_freq'][:, 0, :].shape} = (#channels, 1)")
 ```
 
+
+```python
+train_dict['K_freq'].shape
+```
+
 You will need to define a ECGDataset class, and then define the DataLoader as well. 
 
 
 ```python
 from torch.utils.data import Dataset
-
+import numpy as np
 class ECGDataset(Dataset):
 
     def __init__(self, data_dict):
@@ -75,7 +80,7 @@ class ECGDataset(Dataset):
         TODO: init the Dataset instance.
         """
         # your code here
-        raise NotImplementedError
+        self.data = data_dict
 
     def __len__(self):
         """
@@ -83,7 +88,7 @@ class ECGDataset(Dataset):
         """
 
         # your code here
-        raise NotImplementedError
+        return len(self.data['Y'])
 
     def __getitem__(self, i):
         """
@@ -93,7 +98,13 @@ class ECGDataset(Dataset):
         """
 
         # your code here
-        raise NotImplementedError
+        X =        self.data['X'][:,i,:]
+        K_beat =   self.data['K_beat'][:,i,:]
+        K_rhythm = self.data['K_rhythm'][:,i,:]
+        K_freq =   self.data['K_freq'][:,i,:]
+        Y =        self.data['Y'][i]
+        return ((X, K_beat, K_rhythm, K_freq), Y)
+        
         
         
 from torch.utils.data import DataLoader
@@ -112,8 +123,14 @@ def load_data(dataset, batch_size=128):
             e.g. the shape of each Xi is (# channels, n). In the output, X should be of shape (# channels, batch_size, n)
         """
         # your code here
-        raise NotImplementedError
-        return (X, K_beat, K_rhythm, K_freq), Y
+        allX, Y = zip(*batch)
+        X, K_beat, K_rhythm, K_freq = zip(*allX)
+        Y = torch.tensor(Y, dtype=torch.long)
+        X = torch.tensor(X, dtype=torch.float64)
+        K_beat = torch.tensor(K_beat, dtype=torch.float64)
+        K_rhythm = torch.tensor(K_rhythm, dtype=torch.float64)
+        K_freq = torch.tensor(K_freq, dtype=torch.float64)
+        return ((X, K_beat, K_rhythm, K_freq), Y)
 
     return torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=my_collate)
 
@@ -136,6 +153,12 @@ assert [x.shape for x in train_loader.dataset[0][0]] == [(4,3000), (4,3000), (4,
 
 ```python
 
+```
+
+
+```python
+train_features = next(iter(train_loader))
+len(train_features[0][0]) # 4 128 
 ```
 
 ## 2 Model Defintions [75 points]
@@ -173,8 +196,8 @@ class KnowledgeAttn(nn.Module):
         self.n_knowledge = 1
 
         # your code here
-        raise NotImplementedError
-
+        att_W = nn.Linear(input_features + n_knowledge, attn_dim, bias=False)
+        att_v = nn.Linear(attn_dim, 1, bias=False)
         self.init()
 
     def init(self):
