@@ -60,9 +60,15 @@ def get_count_metrics(folder, data_path=DATA_PATH):
     '''
     
     # your code here
-    raise NotImplementedError
+    full_path = data_path + '/' + folder
+    cnt_normal, cnt_pneumonia = 0, 0
+    for i in os.listdir(full_path + '/NORMAL/'):
+        cnt_normal += 1
+    for i in os.listdir(full_path + '/PNEUMONIA/'):
+        cnt_pneumonia += 1
+    return cnt_normal, cnt_pneumonia
 
-    return number_normal, number_pneumonia
+
 
 
 #output
@@ -87,10 +93,23 @@ def load_data(data_path=DATA_PATH):
     import torchvision
     import torchvision.datasets as datasets
     import torchvision.transforms as transforms
+    from torch.utils.data import DataLoader
 
-    flatten_transform = transforms.Lambda(lambda x: torch.flatten(x))
+    transformer = transforms.Compose( [      
+                            transforms.RandomResizedCrop((224, 224)),
+                            transforms.Resize((24, 24)),
+                            transforms.ToTensor(),
+                            transforms.Lambda(lambda x: torch.flatten(x))])
     # your code here
-    raise NotImplementedError
+    batch_size = 32
+    train_data = datasets.ImageFolder(root = data_path + '/' + 'train',
+                                      transform=transformer)
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    
+    val_data = datasets.ImageFolder(root = data_path + '/' + 'val',
+                                      transform=transformer)
+    val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False)
+    
     
     return train_loader, val_loader
 ```
@@ -184,23 +203,25 @@ class VanillaAutoencoder(nn.Module):
         super(VanillaAutoencoder, self).__init__()
         
         # DO NOT change the names
-        self.fc1 = None
-        self.fc2 = None
-        self.fc3 = None
-        self.fc4 = None
+        self.fc1 = nn.Linear(1728,128)
+        self.fc2 = nn.Linear(128,16)
+        self.fc3 = nn.Linear(16,128)
+        self.fc4 = nn.Linear(128,1728)
         
         """
         TODO: Initialize the model layers as shown above.
         """
         # your code here
-        raise NotImplementedError
+        
         
     def encode(self, x):
         """
         TODO: Perform encoding operation with fc1, fc2, and the corresponding activation function.
         """
         # your code here
-        raise NotImplementedError
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        return x
         
     def decode(self, x):
         x = torch.relu(self.fc3(x))
@@ -265,16 +286,15 @@ class SparseAutoencoder(nn.Module):
         super(SparseAutoencoder, self).__init__()
         
         # DO NOT change the names
-        self.fc1 = None
-        self.fc2 = None
-        self.fc3 = None
-        self.fc4 = None
+        self.fc1 = nn.Linear(1728,128)
+        self.fc2 = nn.Linear(128,16)
+        self.fc3 = nn.Linear(16,128)
+        self.fc4 = nn.Linear(128,1728)
         
         """
         TODO: Initialize the model layers as shown above.
         """
         # your code here
-        raise NotImplementedError
         
         # used in training as sparsity regularization
         self.data_rho = 0
@@ -284,14 +304,18 @@ class SparseAutoencoder(nn.Module):
         TODO: Perform encoding operation with fc1, fc2, and the corresponding activation function.
         """
         # your code here
-        raise NotImplementedError
+        x = torch.sigmoid(self.fc1(x))
+        x = torch.sigmoid(self.fc2(x))
+        return x
         
     def decode(self, x):
         """
         TODO: Perform decoding operation with fc3, fc4, and the corresponding activation function.
         """
         # your code here
-        raise NotImplementedError
+        x = torch.sigmoid(self.fc3(x))
+        x = torch.sigmoid(self.fc4(x))
+        return x
 
     def forward(self, x):
         x = self.encode(x)
@@ -355,23 +379,25 @@ class DenoisingAutoencoder(nn.Module):
         super(DenoisingAutoencoder, self).__init__()
         
         # DO NOT change the names
-        self.fc1 = None
-        self.fc2 = None
-        self.fc3 = None
-        self.fc4 = None
+        self.fc1 = nn.Linear(1728,128)
+        self.fc2 = nn.Linear(128,16)
+        self.fc3 = nn.Linear(16,128)
+        self.fc4 = nn.Linear(128,1728)
         
         """
         TODO: Initialize the model layers as shown above.
         """
         # your code here
-        raise NotImplementedError
+        
         
     def encode(self, x):
         """
         TODO: Perform encoding operation with fc1, fc2, and the corresponding activation function.
         """
         # your code here
-        raise NotImplementedError
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        return x
         
     def decode(self, x):
         x = torch.relu(self.fc3(x))
@@ -390,7 +416,7 @@ class DenoisingAutoencoder(nn.Module):
         Hint: Use torch.randn().
         """
         # your code here
-        raise NotImplementedError
+        noise = torch.randn(x.size()) * std + mean
         x = x + noise
         return self.decode(self.encode(x))  
 
@@ -448,15 +474,14 @@ class StackedAutoencoder(nn.Module):
         super(StackedAutoencoder, self).__init__()
         
         # DO NOT change the names
-        self.ae1 = None
-        self.ae2 = None
-        self.ae3 = None
+        self.ae1 = VanillaAutoencoder()
+        self.ae2 = VanillaAutoencoder()
+        self.ae3 = VanillaAutoencoder()
         
         """
         TODO: Initialize three Vanilla Autoencoders and assign them to self.ae1, self.ae2, self.ae3, respectively.
         """
         # your code here
-        raise NotImplementedError
 
     def forward(self, x):
         x = self.ae1(x)
@@ -475,7 +500,10 @@ class StackedAutoencoder(nn.Module):
         encode function).
         """
         # your code here
-        raise NotImplementedError
+        x = self.ae1(x)
+        x = self.ae2(x)
+        x = self.ae3.encode(x)
+        return x
 
 # initialize the NN
 model = StackedAutoencoder()
@@ -525,10 +553,7 @@ TODO: Define the loss (MSELoss), assign it to `criterion`.
 REFERENCE: https://pytorch.org/docs/stable/generated/torch.nn.MSELoss.html#torch.nn.MSELoss
 """
 
-criterion = None
-
-# your code here
-raise NotImplementedError
+criterion =nn.MSELoss()
 ```
 
 
@@ -582,7 +607,8 @@ def evaluate(model, loader):
         Hint: use torch.cat().
         """
         # your code here
-        raise NotImplementedError
+        all_X_original = torch.cat([all_X_original, x])
+        all_X_reconstructed = torch.cat([all_X_reconstructed, x_reconstructed])
         
     mse, mae = classification_metrics(all_X_reconstructed.detach().numpy(), all_X_original.detach().numpy())
     print(f"mse: {mse:.3f}, mae: {mae:.3f}")
@@ -616,10 +642,9 @@ TODO: Define the optimizer (Adam) with learning rate 0.001, assign it to `optimi
 REFERENCE: https://pytorch.org/docs/stable/optim.html
 """
 def get_optimizer(model):
-    optimizer = None
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     # your code here
-    raise NotImplementedError
    
     return optimizer
 ```
@@ -668,16 +693,15 @@ def train_model(model):
                           average of (- rho * log(data_rho)  +  (1 - rho) * log(1 - data_rho))
                       where we will use rho of 0.1
             """
-            x_reconstructed = None
-            loss = None
+            x_reconstructed = model.forward(x)
+            loss = criterion(x_reconstructed, x)
             # your code here
-            raise NotImplementedError
             if isinstance(model, SparseAutoencoder):
-                penalty = None
                 rho = 0.1
                 data_rho = model.data_rho
+                penalty =  - (rho * torch.log(data_rho)  \
+                              +  (1 - rho) * torch.log(1 - data_rho)).mean()
                 # your code here
-                raise NotImplementedError
                 loss = loss + (0.5 * penalty)
             """ Step 4. backward pass """
             loss.backward()
@@ -770,11 +794,6 @@ AUTOGRADER CELL. DO NOT MODIFY THIS.
 AUTOGRADER CELL. DO NOT MODIFY THIS.
 '''
 
-
-```
-
-
-```python
 
 ```
 
