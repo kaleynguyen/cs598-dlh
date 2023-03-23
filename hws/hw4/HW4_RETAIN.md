@@ -128,7 +128,7 @@ class CustomDataset(Dataset):
         """
         
         # your code here
-        return self.x[index], self.y[index]
+        return (self.x[index], self.y[index])
         
 
 dataset = CustomDataset(seqs, hfs)
