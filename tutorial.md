@@ -108,6 +108,7 @@ w.grad #-2
 import numpy as np
 X = np.array([1,2,3,4], dtype=np.float32)
 Y = np.array([2,4,6,8], dtype=np.float32)
+w = np.zeros_like(X, dtype=np.float32)
 
 def forward(x):
       return w * x
@@ -115,9 +116,9 @@ def loss(y, y_hat):
       return ((y - y_hat)**2).mean()
 def gradient(x, y, y_hat):
       return np.dot(2*x, y_hat-y).mean()
-print(f'Prediction before training: {forward(5): 0.3f}')
+print(f'Prediction before training: {forward(X)}')
 learning_rate = 0.01
-n_iters = 20
+n_iters = 5
 for epoch in range(n_iters):
       # prediction: forward pass
       y_pred = forward(X)
@@ -127,10 +128,91 @@ for epoch in range(n_iters):
       dw = gradient(X, Y, y_pred)
       # update weights
       w -= learning_rate * dw
-      if epoch % 2 == 0:
-            print('epoch {0}: w = {1:0.3f}, loss = {2:0.5f}'.format(epoch+1, w, l))
-print(f'Prediction after training: {forward(5): 0.3f}')
+print(f'Prediction after training: {forward(X)}')
 ```
 
+
+# Backpropagation through Pytorch
+```python
+import torch
+X = torch.tensor([1,2,3,4], dtype=torch.float32)
+Y = torch.tensor([2,4,6,8], dtype=torch.float32)
+w = torch.tensor(0.0, dtype=torch.float32, requires_grad=True)
+
+
+def forward(x):
+	return w * x
+def loss(y, y_hat):
+	return ((y-y_hat)**2).mean()
+print(f'Prediction before training: f(5) = {forward(5).item():.3f}')
+
+# Start training
+learning_rate = 0.01
+n_iters = 100
+for epoch in range(n_iters):
+      # prediction: forward pass
+      y_pred = forward(X)
+      # loss
+      l = loss(Y, y_pred)
+      # final gradient of dl/dw by backward pass through local gradients
+      l.backward() #dl/dw
+      # update weights
+      with torch.no_grad():
+      	w -= learning_rate * w.grad
+      #zero gradients
+      w.grad.zero_()
+      if epoch % 10 == 0:
+        print(f'epoch {epoch+1}: w = {w.item():.3f}, loss = {l.item():.8f}')
+
+print(f'Prediction after training: f(5) = {forward(5).item():.3f}')
+```
+# Training pipeline
+1. Design model (input, output, forward pass)
+2. Construct loss and optimizer
+3. Training loop
+	- forward pass: compute prediction
+	- backward pass: compute gradients
+	- update weights 
+```python
+import torch
+import torch.nn as nn
+
+X = torch.tensor([[1],[2],[3],[4]], dtype=torch.float32)
+Y = torch.tensor([[2],[4],[6],[8]], dtype=torch.float32)
+n_samples, n_features = X.shape
+
+
+class LinearRegression(nn.Module):
+	def __init__(self, input_dim, output_dim):
+		super(LinearRegression, self).__init__()
+		self.lin = nn.Linear(input_dim, output_dim)
+	def forward(self, x):
+		return self.lin(x)
+
+model = nn.Linear(n_features, n_features)
+loss = nn.MSELoss()
+optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+print(f'Prediction before training: f(5) = {model(torch.tensor([5], dtype=torch.float32)).item():.3f}')
+
+# Start training
+
+n_iters = 200
+for epoch in range(n_iters):
+      # prediction: forward pass
+    y_pred = model(X)
+      # loss
+    l = loss(Y, y_pred)
+      # final gradient of dl/dw by backward pass through local gradients
+    l.backward() #dl/dw
+      # update weights
+    optimizer.step()
+      #zero gradients
+    optimizer.zero_grad()
+    if epoch % 10 == 0:
+        [w,b] = model.parameters()
+        print(f'epoch {epoch+1}: w = {w[0][0].item():.3f}, loss = {l.item():.8f}')
+
+print(f'Prediction after training: f(5) = {model(torch.tensor([5], dtype=torch.float32)).item():.3f}')
+```
 
 
