@@ -196,8 +196,8 @@ class KnowledgeAttn(nn.Module):
         self.n_knowledge = 1
 
         # your code here
-        att_W = nn.Linear(input_features + n_knowledge, attn_dim, bias=False)
-        att_v = nn.Linear(attn_dim, 1, bias=False)
+        self.att_W = nn.Linear(input_features + 1, attn_dim, bias=False)
+        self.att_v = nn.Linear(attn_dim, 1, bias=False)
         self.init()
 
     def init(self):
@@ -210,10 +210,11 @@ class KnowledgeAttn(nn.Module):
 
         :param x: of shape (-1, D, nfeatures)
         :param attn: of shape (-1, D, 1)
-        TODO: return the weighted sum of x along the middle axis with weights even in attn. output shoule be (-1, nfeatures)
+        TODO: return the weighted sum of x along the middle axis with weights even in attn. 
+        output shoule be (-1, nfeatures)
         """
         # your code here
-        raise NotImplementedError
+        return torch.sum(attn * x, dim=1) #wTx
 
 
     def forward(self, x, k):
@@ -227,14 +228,20 @@ class KnowledgeAttn(nn.Module):
             concatenate the input x and knowledge k together (on the last dimension)
             pass the concatenated output through the learnable Linear transforms
                 first att_W, then tanh, then att_v
-                the output shape should be (-1, D, 1)
+                the output shape should be (-1, D, 1) #right until this point (2,3,1)
             to get attention values, apply softmax on the output of linear layer
                 You could use F.softmax(). Be careful which dimension you apply softmax over
             aggregate x using the attention values via self.attention_sum, and return
         """
         # your code here
-        raise NotImplementedError
-        return out, attn
+        _, D, input_features = x.size()
+        ori_x = x.clone()
+        x = torch.concat([x,k], -1)
+        x = torch.tanh(self.att_W(x))
+        x = self.att_v(x)
+        attn = F.softmax(x, 1) 
+        out = self.attention_sum(ori_x, attn)
+        return (out, attn)
 ```
 
 
@@ -671,11 +678,6 @@ auroc, f1 = evaluate_predictions(truth, pred)
 print(f"AUROC={auroc} and F1={f1}")
 
 assert auroc > 0.8 and f1 > 0.7, "Performance is too low {}. Something's probably off.".format((auroc, f1))
-```
-
-
-```python
-
 ```
 
 
