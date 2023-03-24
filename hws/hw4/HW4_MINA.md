@@ -234,7 +234,6 @@ class KnowledgeAttn(nn.Module):
             aggregate x using the attention values via self.attention_sum, and return
         """
         # your code here
-        _, D, input_features = x.size()
         ori_x = x.clone()
         x = torch.concat([x,k], -1)
         x = torch.tanh(self.att_W(x))
@@ -309,7 +308,9 @@ class BeatNet(nn.Module):
         :param conv_out_channels: also called number of filters/kernels
         TODO: We will define a network that does two things. Specifically:
             1. use one 1-D convolutional layer to capture local informatoin, on x and k_beat (see forward())
-                conv: The kernel size should be set to 32, and the number of filters should be set to *conv_out_channels*. Stride should be *conv_stride*
+                conv: The kernel size should be set to 32, 
+                and the number of filters should be set to *conv_out_channels*. 
+                Stride should be *conv_stride*
                 conv_k: same as conv, except that it has only 1 filter instead of *conv_out_channels*
             2. an attention mechanism to aggregate the convolution outputs. Specifically:
                 attn: KnowledgeAttn with input_features equaling conv_out_channels, and attn_dim=att_cnn_dim
@@ -320,13 +321,21 @@ class BeatNet(nn.Module):
         self.conv_kernel_size = 32
         self.conv_stride = 2
         #Define conv and conv_k, the two Conv1d modules
-        # your code here
-        raise NotImplementedError
+        # your code here 1
+        self.conv = nn.Conv1d(in_channels=1 ,
+                              out_channels=conv_out_channels,
+                              kernel_size=self.conv_kernel_size,
+                              stride=self.conv_stride)
+        self.conv_k = nn.Conv1d(in_channels=1,
+                                out_channels=1,
+                                kernel_size=self.conv_kernel_size,
+                                stride=self.conv_stride)
 
         self.att_cnn_dim = 8
         #Define attn, the KnowledgeAttn module
-        # your code here
-        raise NotImplementedError
+        # your code here 2
+        self.attn = KnowledgeAttn(input_features=conv_out_channels, 
+                                        attn_dim=self.att_cnn_dim)
 
     def forward(self, x, k_beat):
         """
@@ -336,7 +345,8 @@ class BeatNet(nn.Module):
             out: shape (batch, M, self.conv_out_channels)
             alpha: shape (batch * M, N, 1) where N is a result of convolution
         TODO:
-            [Given] reshape the data - convert x/k_beat of shape (batch, n) to (batch * M, 1, T), where n = MT
+            [Given] 
+                reshape the data - convert x/k_beat of shape (batch, n=MT) to (batch * M, 1, T), where n = MT
                 If you define the data carefully, you could use torch.Tensor.view() for all reshapes in this HW
             apply convolution on x and k_beat
                 pass the reshaped x through self.conv, and then ReLU
@@ -347,8 +357,9 @@ class BeatNet(nn.Module):
         """
         x = x.view(-1, self.T).unsqueeze(1)
         k_beat = k_beat.view(-1, self.T).unsqueeze(1)
-        # your code here
-        raise NotImplementedError
+        x = torch.relu(self.conv(x)).permute(0,2,1)
+        k_beat = torch.relu(self.conv_k(k_beat)).permute(0,2,1)
+        out, alpha = self.attn(x, k_beat)
         out = out.view(-1, self.M, self.conv_out_channels)
         return out, alpha
 ```
@@ -406,17 +417,27 @@ class RhythmNet(nn.Module):
         self.rnn_hidden_size = 32
         ### define lstm: LSTM Input is of shape (batch size, M, input_size)
         # your code here
-        raise NotImplementedError
+        #raise NotImplementedError
+        self.lstm = nn.LSTM(input_size=input_size,
+                            num_layers=1,
+                            batch_first=True,
+                            hidden_size = self.rnn_hidden_size,
+                            bidirectional = True)
 
         ### Attention mechanism: define attn to be a KnowledgeAttn
         self.att_rnn_dim = 8
         # your code here
-        raise NotImplementedError
+        self.attn = KnowledgeAttn( input_features=self.rnn_hidden_size*2, 
+                                        attn_dim=self.att_rnn_dim)
+                                  
 
         ### Define the Dropout and fully connecte layers (fc and do)
         self.out_size = rhythm_out_size
         # your code here
-        raise NotImplementedError
+        self.do = nn.Dropout(0.5)
+        self.fc = nn.Linear(self.rnn_hidden_size*2,
+                            self.out_size)
+        
 
 
 
@@ -429,14 +450,17 @@ class RhythmNet(nn.Module):
             beta: shape (batch, M, 1)
         TODO:
             reshape the k_rhythm->(batch, M, 1) (HINT: use k_rhythm.unsqueeze())
-            pass the reshaped x through lstm
+            pass the x through lstm
             pass the lstm output and knowledge through attn
             pass the result through fully connected layer - ReLU - Dropout
             denote the final output as *out*, and the attention output as *beta*
         """
 
         # your code here
-        raise NotImplementedError
+        k_rhythm = k_rhythm.unsqueeze(-1)
+        x, _ = self.lstm(x)
+        out, beta = self.attn(x, k_rhythm)
+        out = self.do(torch.relu(self.fc(out)))
         return out, beta
 ```
 
