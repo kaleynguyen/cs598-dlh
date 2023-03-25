@@ -120,16 +120,18 @@ def load_data(dataset, batch_size=128):
         TODO: write a collate function such that it outputs ((X, K_beat, K_rhythm, K_freq), Y)
             each output variable is a batched version of what's in the input *batch*
             For each output variable - it should be either float tensor or long tensor (for Y). If applicable, channel dim precedes batch dim
-            e.g. the shape of each Xi is (# channels, n). In the output, X should be of shape (# channels, batch_size, n)
+            e.g. the shape of each Xi is (# channels, n). 
+            In the output, X should be of shape (# channels, batch_size, n)
         """
         # your code here
         allX, Y = zip(*batch)
         X, K_beat, K_rhythm, K_freq = zip(*allX)
         Y = torch.tensor(Y, dtype=torch.long)
-        X = torch.tensor(X, dtype=torch.float64)
-        K_beat = torch.tensor(K_beat, dtype=torch.float64)
-        K_rhythm = torch.tensor(K_rhythm, dtype=torch.float64)
-        K_freq = torch.tensor(K_freq, dtype=torch.float64)
+        X = torch.tensor(X, dtype=torch.float64).permute(1,0,2)
+        K_beat = torch.tensor(K_beat, dtype=torch.float64).permute(1,0,2)
+        K_rhythm = torch.tensor(K_rhythm, dtype=torch.float64).permute(1,0,2)
+        K_freq = torch.tensor(K_freq, dtype=torch.float64) .permute(1,0,2)
+
         return ((X, K_beat, K_rhythm, K_freq), Y)
 
     return torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=my_collate)
@@ -157,8 +159,13 @@ assert [x.shape for x in train_loader.dataset[0][0]] == [(4,3000), (4,3000), (4,
 
 
 ```python
-train_features = next(iter(train_loader))
-len(train_features[0][0]) # 4 128 
+'''
+AUTOGRADER CELL CHECK FROM CAMPUSWIRE. DO NOT MODIFY THIS.
+'''
+assert iter(train_loader).next()[0][0].shape == (4, 128, 3000)
+assert iter(train_loader).next()[0][1].shape == (4, 128, 3000)
+assert iter(train_loader).next()[0][2].shape == (4, 128, 60)
+assert iter(train_loader).next()[1].shape == (128,)
 ```
 
 ## 2 Model Defintions [75 points]
@@ -240,7 +247,7 @@ class KnowledgeAttn(nn.Module):
         x = self.att_v(x)
         attn = F.softmax(x, 1) 
         out = self.attention_sum(ori_x, attn)
-        return (out, attn)
+        return out, attn
 ```
 
 
@@ -520,17 +527,27 @@ class FreqNet(nn.Module):
         self.rhythm_nets = nn.ModuleList()
         #use self.beat_nets.append() and self.rhythm_nets.append() to append 4 BeatNets/RhythmNets
         # your code here
-        raise NotImplementedError
+        self.beat_nets.append(BeatNet(self.conv_out_channels))\
+                      .append(BeatNet(self.conv_out_channels))\
+                      .append(BeatNet(self.conv_out_channels))\
+                      .append(BeatNet(self.conv_out_channels))
+        self.rhythm_nets.append(RhythmNet(self.conv_out_channels, self.rhythm_out_size))\
+                        .append(RhythmNet(self.conv_out_channels, self.rhythm_out_size))\
+                        .append(RhythmNet(self.conv_out_channels, self.rhythm_out_size))\
+                        .append(RhythmNet(self.conv_out_channels, self.rhythm_out_size))
+
 
 
         self.att_channel_dim = 2
         ### Add the frequency attention module using KnowledgeAttn (attn)
         # your code here
-        raise NotImplementedError
+        self.attn = KnowledgeAttn(input_features=self.rhythm_out_size, 
+                                  attn_dim=self.att_channel_dim)
 
         ### Create the fully-connected output layer (fc)
         # your code here
-        raise NotImplementedError
+        self.fc = nn.Linear(self.att_channel_dim, 
+                            self.n_class*self.n_channels)
 
 
     def forward(self, x, k_beats, k_rhythms, k_freq):
@@ -560,9 +577,10 @@ class FreqNet(nn.Module):
             tx, _ = self.beat_nets[i](x[i], k_beats[i])
             new_x[i], _ = self.rhythm_nets[i](tx, k_rhythms[i])
         x = torch.stack(new_x, 1)  # [128,8] -> [128,4,8]
-
+        print(x.size())
         # your code here
-        raise NotImplementedError
+        out, gamma = self.attn(x, k_freq.permute(1,0,2))
+        out = self.fc(out)
         return out, gama
 ```
 
@@ -586,6 +604,14 @@ del _testm, _out, _gamma,  _B, _M, _T
 
 ```python
 
+```
+
+
+```python
+_B, _M, _T = 17, 59, 109
+_testm = FreqNet(n=_M * _T, T=_T)
+assert isinstance(_testm.attn, KnowledgeAttn), "Should use one KnowledgeAttn Module"
+_testm.fc.weight.shape
 ```
 
 ## 3 Training and Evaluation [15 points]
