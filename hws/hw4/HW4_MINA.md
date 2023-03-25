@@ -120,16 +120,18 @@ def load_data(dataset, batch_size=128):
         TODO: write a collate function such that it outputs ((X, K_beat, K_rhythm, K_freq), Y)
             each output variable is a batched version of what's in the input *batch*
             For each output variable - it should be either float tensor or long tensor (for Y). If applicable, channel dim precedes batch dim
-            e.g. the shape of each Xi is (# channels, n). In the output, X should be of shape (# channels, batch_size, n)
+            e.g. the shape of each Xi is (# channels, n). 
+            In the output, X should be of shape (# channels, batch_size, n)
         """
         # your code here
         allX, Y = zip(*batch)
         X, K_beat, K_rhythm, K_freq = zip(*allX)
-        Y = torch.tensor(Y, dtype=torch.long)
-        X = torch.tensor(X, dtype=torch.float64)
-        K_beat = torch.tensor(K_beat, dtype=torch.float64)
-        K_rhythm = torch.tensor(K_rhythm, dtype=torch.float64)
-        K_freq = torch.tensor(K_freq, dtype=torch.float64)
+        Y = torch.tensor(Y).long()
+        X = torch.tensor(X).float().permute(1,0,2)
+        K_beat = torch.tensor(K_beat).float().permute(1,0,2)
+        K_rhythm = torch.tensor(K_rhythm).float().permute(1,0,2)
+        K_freq = torch.tensor(K_freq).float().permute(1,0,2)
+
         return ((X, K_beat, K_rhythm, K_freq), Y)
 
     return torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=my_collate)
@@ -157,8 +159,13 @@ assert [x.shape for x in train_loader.dataset[0][0]] == [(4,3000), (4,3000), (4,
 
 
 ```python
-train_features = next(iter(train_loader))
-len(train_features[0][0]) # 4 128 
+'''
+AUTOGRADER CELL CHECK FROM CAMPUSWIRE. DO NOT MODIFY THIS.
+'''
+assert iter(train_loader).next()[0][0].shape == (4, 128, 3000)
+assert iter(train_loader).next()[0][1].shape == (4, 128, 3000)
+assert iter(train_loader).next()[0][2].shape == (4, 128, 60)
+assert iter(train_loader).next()[1].shape == (128,)
 ```
 
 ## 2 Model Defintions [75 points]
@@ -196,7 +203,7 @@ class KnowledgeAttn(nn.Module):
         self.n_knowledge = 1
 
         # your code here
-        self.att_W = nn.Linear(input_features + 1, attn_dim, bias=False)
+        self.att_W = nn.Linear(input_features + self.n_knowledge, attn_dim, bias=False)
         self.att_v = nn.Linear(attn_dim, 1, bias=False)
         self.init()
 
@@ -240,7 +247,7 @@ class KnowledgeAttn(nn.Module):
         x = self.att_v(x)
         attn = F.softmax(x, 1) 
         out = self.attention_sum(ori_x, attn)
-        return (out, attn)
+        return out, attn
 ```
 
 
@@ -323,7 +330,7 @@ class BeatNet(nn.Module):
         #Define conv and conv_k, the two Conv1d modules
         # your code here 1
         self.conv = nn.Conv1d(in_channels=1 ,
-                              out_channels=conv_out_channels,
+                              out_channels=self.conv_out_channels,
                               kernel_size=self.conv_kernel_size,
                               stride=self.conv_stride)
         self.conv_k = nn.Conv1d(in_channels=1,
@@ -334,7 +341,7 @@ class BeatNet(nn.Module):
         self.att_cnn_dim = 8
         #Define attn, the KnowledgeAttn module
         # your code here 2
-        self.attn = KnowledgeAttn(input_features=conv_out_channels, 
+        self.attn = KnowledgeAttn(input_features=self.conv_out_channels, 
                                         attn_dim=self.att_cnn_dim)
 
     def forward(self, x, k_beat):
@@ -355,12 +362,12 @@ class BeatNet(nn.Module):
             pass the conv'd x and conv'd knowledge through self.attn to get the output (*out*) and attention (*alpha*)
             [Given] reshape the output *out* to be of shape (batch, M, self.conv_out_channels)
         """
-        x = x.view(-1, self.T).unsqueeze(1)
-        k_beat = k_beat.view(-1, self.T).unsqueeze(1)
+        x = x.reshape(-1, self.T).unsqueeze(1)
+        k_beat = k_beat.reshape(-1, self.T).unsqueeze(1)
         x = torch.relu(self.conv(x)).permute(0,2,1)
         k_beat = torch.relu(self.conv_k(k_beat)).permute(0,2,1)
         out, alpha = self.attn(x, k_beat)
-        out = out.view(-1, self.M, self.conv_out_channels)
+        out = out.reshape(-1, self.M, self.conv_out_channels)
         return out, alpha
 ```
 
@@ -520,17 +527,20 @@ class FreqNet(nn.Module):
         self.rhythm_nets = nn.ModuleList()
         #use self.beat_nets.append() and self.rhythm_nets.append() to append 4 BeatNets/RhythmNets
         # your code here
-        raise NotImplementedError
+        self.beat_nets.extend([BeatNet(n, T, self.conv_out_channels)]*4)
+        self.rhythm_nets.extend([RhythmNet(n, T, self.conv_out_channels, self.rhythm_out_size)]*4)
 
 
         self.att_channel_dim = 2
         ### Add the frequency attention module using KnowledgeAttn (attn)
         # your code here
-        raise NotImplementedError
+        self.attn = KnowledgeAttn(input_features=self.rhythm_out_size, 
+                                  attn_dim=self.att_channel_dim)
 
         ### Create the fully-connected output layer (fc)
         # your code here
-        raise NotImplementedError
+        self.fc = nn.Linear(self.rhythm_out_size,
+                            self.n_class)
 
 
     def forward(self, x, k_beats, k_rhythms, k_freq):
@@ -562,8 +572,9 @@ class FreqNet(nn.Module):
         x = torch.stack(new_x, 1)  # [128,8] -> [128,4,8]
 
         # your code here
-        raise NotImplementedError
-        return out, gama
+        out, gamma = self.attn(x, k_freq.permute(1,0,2))
+        out = F.softmax(self.fc(out),1)
+        return out, gamma
 ```
 
 
@@ -593,7 +604,8 @@ In this part we will define the training procedures, train the model, and evalua
 
 
 ```python
-def train_model(model, train_dataloader, n_epoch=5, lr=0.003, device=None):
+def train_model(model, train_dataloader, n_epoch=5, 
+                lr=0.003, device=None):
     import torch.optim as optim
     """
     :param model: The instance of FreqNet that we are training
@@ -616,13 +628,19 @@ def train_model(model, train_dataloader, n_epoch=5, lr=0.003, device=None):
     loss_history = []
 
     # your code here
-    raise NotImplementedError
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    loss_func = nn.CrossEntropyLoss()
 
     for epoch in range(n_epoch):
         curr_epoch_loss = []
         for (X, K_beat, K_rhythm, K_freq), Y in train_dataloader:
             # your code here
-            raise NotImplementedError
+            y_hat, attn = model(X, K_beat, K_rhythm, K_freq)
+            #pred is a vector representing [p_0, p_1].
+            loss = loss_func(y_hat, Y)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
             curr_epoch_loss.append(loss.cpu().data.numpy())
         print(f"epoch{epoch}: curr_epoch_loss={np.mean(curr_epoch_loss)}")
         loss_history += curr_epoch_loss
@@ -645,7 +663,9 @@ def eval_model(model, dataloader, device=None):
     Y_test = []
     for (X, K_beat, K_rhythm, K_freq), Y in dataloader:
         # your code here
-        raise NotImplementedError
+        y_pred, attn = model(X, K_beat, K_rhythm, K_freq)
+        pred_all.append(y_pred.detach().numpy())
+        Y_test.append(Y.detach().numpy())
     pred_all = np.concatenate(pred_all, axis=0)
     Y_test = np.concatenate(Y_test, axis=0)
 
@@ -686,8 +706,9 @@ def evaluate_predictions(truth, pred):
     """
     from sklearn.metrics import roc_auc_score, f1_score
 
-    # your code here
-    raise NotImplementedError
+    # your code here 
+    auroc = roc_auc_score(truth, pred[:,1])
+    f1 = f1_score(truth, np.argmax(pred, 1))
 
     return auroc, f1
 ```
@@ -702,6 +723,11 @@ auroc, f1 = evaluate_predictions(truth, pred)
 print(f"AUROC={auroc} and F1={f1}")
 
 assert auroc > 0.8 and f1 > 0.7, "Performance is too low {}. Something's probably off.".format((auroc, f1))
+```
+
+
+```python
+
 ```
 
 
