@@ -1,0 +1,157 @@
+%
+% File acl2021.tex
+%
+%% Based on the style files for EMNLP 2020, which were
+%% Based on the style files for ACL 2020, which were
+%% Based on the style files for ACL 2018, NAACL 2018/19, which were
+%% Based on the style files for ACL-2015, with some improvements
+%%  taken from the NAACL-2016 style
+%% Based on the style files for ACL-2014, which were, in turn,
+%% based on ACL-2013, ACL-2012, ACL-2011, ACL-2010, ACL-IJCNLP-2009,
+%% EACL-2009, IJCNLP-2008...
+%% Based on the style files for EACL 2006 by 
+%%e.agirre@ehu.es or Sergi.Balari@uab.es
+%% and that of ACL 08 by Joakim Nivre and Noah Smith
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[hyperref]{acl2021}
+\usepackage{times}
+\usepackage{latexsym}
+\renewcommand{\UrlFont}{\ttfamily\small}
+
+% This is not strictly necessary, and may be commented out,
+% but it will improve the layout of the manuscript,
+% and will typically save some space.
+\usepackage{microtype}
+
+\aclfinalcopy
+%\def\aclpaperid{***} %  Enter the acl Paper ID here
+
+%\setlength\titlebox{5cm}
+% You can expand the titlebox if you need extra space
+% to show all the authors. Please do not make the titlebox
+% smaller than 5cm (the original size); we will check this
+% in the camera-ready version and ask you to change it back.
+
+% Content lightly modified from original work by Jesse Dodge and Noah Smith
+
+
+\newcommand\BibTeX{B\textsc{ib}\TeX}
+
+\title{Reproducibility Project Instructions for CS598 DL4H in Spring 2023}
+
+\author{Author1 and Author2 \\
+  \texttt{\{author1, author2\}@illinois.edu}
+  \\[2em]
+  Group ID: X\\
+  Paper ID: X\\
+  Presentation link: \url{https://www.youtube.com} \\
+  Code link: \url{https://www.github.com}} 
+
+\begin{document}
+\maketitle
+
+% All sections are mandatory.
+% Keep in mind that your page limit is 8, excluding references.
+% For specific grading rubrics, please see the project instruction.
+
+\section{Introduction}
+A  few  sentences  placing  the  work  in  context. Limit it to a few paragraphs at most; your report is on reproducing a piece of work, you don’t have to motivate that work. However, it should be clear enough what the original paper is about and what the contribution of it is.
+
+\section{Scope of reproducibility}
+
+Explain the claims from the paper you picked for the reproduction study and briefly motivate your choice. We recommend picking the claim that is the central contribution of the paper. To find what this contribution is, try to summarize the most important result of the paper in 1-2 sentences, e.g. ``This paper introduces a new activation function X that outperforms a similar activation function Y on tasks Z,V,W.'' 
+
+Make the scope as specific as possible. It should be something that can be supported or rejected by your data. For example, consider this scope: 
+
+\textit{``Contextual embedding models have shown strong performance on a number of tasks across NLP. We will run experiments evaluating two types of contextual embedding models on datasets X, Y, and Z.''}
+
+
+That scope is too broad and lacks precise outcome (what is ``strong performance?''). Now consider this scope:
+
+\textit{``Finetuning pretrained BERT on SST-2 will have higher accuracy than an LSTM trained with GloVe embeddings.''}
+
+This scope is better because it's more specific and has an outcome that can be either supported or rejected based on your work: 
+\subsection{Addressed claims from the original paper}
+
+Clearly itemize the claims you are testing:
+\begin{itemize}
+    \item Claim 1
+    \item Claim 2
+    \item Claim 3
+\end{itemize}
+
+
+\section{Methodology}
+
+In this section you explain your approach -- did you use the author's code, did you aim to re-implement the approach from the paper description? Summarize the resources (code, documentation, GPUs) that you used. 
+
+\subsection{Model descriptions}
+Describe the models used in the original paper, including the architecture, learning objective and the number of parameters.
+
+\subsection{Data descriptions}
+Describe the datasets you used (with some statistics) and how you obtained them. 
+
+\subsection{Hyperparameters}
+Describe how you set the hyperparameters and what the source was for their value (e.g. paper, code or your guess). 
+
+\subsection{Implementation}
+Describe whether you use the existing code or write your own code, with the link to the code. Note that the github repo you link to should be public and have a clear documentation.
+
+\subsection{Computational requirements}
+Provide information on computational requirements for each of your experiments. For example, the number of CPU/GPU hours and memory requirements.
+Mention both your estimation made before running the experiments (i.e. in the proposal) and the actual resources you used to reproducing the experiments. 
+\textbf{\textit{You'll need to think about this ahead of time, and write your code in a way that captures this information so you can later add it to this section.} }
+
+\section{Results}
+Start with a high-level overview of your results. Does your work support the claims you listed in section 2.1? Keep this section as factual and precise as possible, reserve your judgement and discussion points for the next ``Discussion'' section. 
+
+Go into each individual result you have, say how it relates to one of the claims, and explain what your result is. Logically group related results into sections. Clearly state if you have gone beyond the original paper to run additional experiments and how they relate to the original claims. 
+
+Tips 1: Be specific and use precise language, e.g. ``we reproduced the accuracy to within 1\% of reported value, that upholds the paper's conclusion that it performs much better than baselines.'' Getting exactly the same number is in most cases infeasible, so you'll need to use your judgement call to decide if your results support the original claim of the paper. 
+
+Tips 2: You may want to use tables and figures to demonstrate your results.
+
+% The number of subsections for results should be the same as the number of hypotheses you are trying to verify.
+
+\subsection{Result 1}
+
+\subsection{Result 2}
+
+\subsection{Additional results not present in the original paper}
+
+Describe any additional experiments beyond the original paper. This could include experimenting with additional datasets, exploring different methods, running more ablations, or tuning the hyperparameters. For each additional experiment, clearly describe which experiment you conducted, its result, and discussions (e.g. what is the indication of the result).
+
+\section{Discussion}
+
+Describe larger implications of the experimental results, whether the original paper was reproducible, and if it wasn’t, what factors made it irreproducible. 
+
+Give your judgement on if you feel the evidence you got from running the code supports the claims of the paper. Discuss the strengths and weaknesses of your approach -- perhaps you didn't have time to run all the experiments, or perhaps you did additional experiments that further strengthened the claims in the paper.
+
+\subsection{What was easy}
+Describe which parts of your reproduction study were easy. E.g. was it easy to run the author's code, or easy to re-implement their method based on the description in the paper. The goal of this section is to summarize to the reader which parts of the original paper they could easily apply to their problem. 
+
+Tips: Be careful not to give sweeping generalizations. Something that is easy for you might be difficult to others. Put what was easy in context and explain why it was easy (e.g. code had extensive API documentation and a lot of examples that matched experiments in papers). 
+
+\subsection{What was difficult}
+Describe which parts of your reproduction study were difficult or took much more time than you expected. Perhaps the data was not available and you couldn't verify some experiments, or the author's code was broken and had to be debugged first. Or, perhaps some experiments just take too much time/resources to run and you couldn't verify them. The purpose of this section is to indicate to the reader which parts of the original paper are either difficult to re-use, or require a significant amount of work and resources to verify. 
+
+Tips: Be careful to put your discussion in context. For example, don't say ``the math was difficult to follow,'' say ``the math requires advanced knowledge of calculus to follow.'' 
+
+\subsection{Recommendations for reproducibility}
+
+Describe a set of recommendations to the original authors or others who work in this area for improving reproducibility.
+
+\section{Communication with original authors}
+Document the extent of (or lack of) communication with the original authors. To make sure the reproducibility report is a fair assessment of the original research we recommend getting in touch with the original authors. You can ask authors specific questions, or if you don't have any questions you can send them the full report to get their feedback.
+
+
+\bibliographystyle{acl_natbib}
+\bibliography{acl2021}
+
+%\appendix
+
+
+
+\end{document}
+
