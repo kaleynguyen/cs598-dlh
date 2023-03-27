@@ -38,15 +38,15 @@
 
 \newcommand\BibTeX{B\textsc{ib}\TeX}
 
-\title{Reproducibility Project Instructions for CS598 DL4H in Spring 2023}
+\title{Reproducibility Project of Density-Aware Personalized Training for Risk Prediction in Imbalanced Medical Data}
 
-\author{Author1 and Author2 \\
-  \texttt{\{author1, author2\}@illinois.edu}
+\author{Kaley Nguyen \\
+  \texttt{\{kaleynn2\}@illinois.edu}
   \\[2em]
-  Group ID: X\\
-  Paper ID: X\\
-  Presentation link: \url{https://www.youtube.com} \\
-  Code link: \url{https://www.github.com}} 
+  Group ID: 103\\
+  Paper ID: 81 \cite{huo2022densityaware}\\
+  Presentation link: \url{https://www.youtube.com/working_on_it} \\
+  Code link: \url{http://github.com/kaleynguyen/}} 
 
 \begin{document}
 \maketitle
@@ -56,52 +56,66 @@
 % For specific grading rubrics, please see the project instruction.
 
 \section{Introduction}
-A  few  sentences  placing  the  work  in  context. Limit it to a few paragraphs at most; your report is on reproducing a piece of work, you don’t have to motivate that work. However, it should be clear enough what the original paper is about and what the contribution of it is.
+Since public health data follow a long tail distribution \cite{longtail}, many medical events are rare events. In the past, researchers have attempted to solve the issue by either undersampling the majority class, oversampling the minority class \cite{sampling} or use synthetic examples to account for imbalance \cite{smote}. The authors of the article suggest the following framework for training the data with the imbalance problem: 1. Separate the feature extraction and classification processes; 2. Train the network using a loss function that takes into account density and a learnable cost matrix for misclassifications. Using the real-world medical datasets (MIMIC-III), the model's performance metrics are improved, as evidenced by the AUC-ROC, AUC-PRC, and Brier Skill Score.
 
 \section{Scope of reproducibility}
 
-Explain the claims from the paper you picked for the reproduction study and briefly motivate your choice. We recommend picking the claim that is the central contribution of the paper. To find what this contribution is, try to summarize the most important result of the paper in 1-2 sentences, e.g. ``This paper introduces a new activation function X that outperforms a similar activation function Y on tasks Z,V,W.'' 
+The paper introduces a new approach to handle imbalanced medical data set by exploiting the imbalanced densities and training the network with a density-aware hinge loss function to improve the performance metric by 4.7\% (max percent change AUC-ROC) and 14.2\% percent (max percent change AUC-PRC) compared to the baselines of mortality prediction on MIMIC-III dataset. 
 
-Make the scope as specific as possible. It should be something that can be supported or rejected by your data. For example, consider this scope: 
+\subsection{Predictive Power and Performance Metrics}
+The authors propose a framework for addressing class imbalance density (7-10\%) and utilizing the imbalance to provide density-aware training for enhanced risk prediction performance.  
 
-\textit{``Contextual embedding models have shown strong performance on a number of tasks across NLP. We will run experiments evaluating two types of contextual embedding models on datasets X, Y, and Z.''}
-
-
-That scope is too broad and lacks precise outcome (what is ``strong performance?''). Now consider this scope:
-
-\textit{``Finetuning pretrained BERT on SST-2 will have higher accuracy than an LSTM trained with GloVe embeddings.''}
-
-This scope is better because it's more specific and has an outcome that can be either supported or rejected based on your work: 
-\subsection{Addressed claims from the original paper}
-
-Clearly itemize the claims you are testing:
+The framework proposes some ideas: 
 \begin{itemize}
-    \item Claim 1
-    \item Claim 2
-    \item Claim 3
+    \item The risk prediction performance can be improved by decoupling the training of representation learning and classification to extract class-specific features and predictions.  
+    \item Differences in density are some features that should be learned, rather than attempted to be eliminated. 
+    \item AUC-ROC is too confident to use as the only performance metric to address the rare medical event predictive power. 
 \end{itemize}
 
+\subsection{Discriminative Power}
+The authors propose that  the patients who survived would be more similar to each other compared to the patients who did not survive. 
 
 \section{Methodology}
 
-In this section you explain your approach -- did you use the author's code, did you aim to re-implement the approach from the paper description? Summarize the resources (code, documentation, GPUs) that you used. 
+I aim to implement the approach of the author as below:
 
+\begin{enumerate}
+    \item Sampling 2 batches of data using 2 different sampling strategies, regular random sampling and stratified random sampling. Decoupling training for imbalance classes to separate the feature extraction and classifier output. 
+    \item Density-aware outlier detection loss replaces the log loss or cross entropy loss to address the imbalance issue. 
+    \item Trainable cost matrix is used to reduce the bias between the big class and small class.  
+\end{enumerate}
 \subsection{Model descriptions}
-Describe the models used in the original paper, including the architecture, learning objective and the number of parameters.
+\begin{itemize}
+    \item Split the data using 80/10/10 splits
+    \item Train the model on flexEHR, which is a GRU based method architecture.
+    \item Train the model with 50 epochs, batch size is 128 and the Adam optimizer is used.
+    \item AUC-ROC, AUC-PRC and BSS are used to measure the difficulty of discriminating power under imbalance.
+    \item softmax is used in the last layer of the flexEHR to obtain the predicted probability for the calibration study.  
+\end{itemize}
+
+
+
+ 
 
 \subsection{Data descriptions}
-Describe the datasets you used (with some statistics) and how you obtained them. 
+For predicting a patient's mortality and phenotype, the authors only look at the first 48 hours after they are admitted to the ICU. The idea is that the precaution treatment can be done for early risk prognosis and phenotyping since the average stay in the ICU is 100 to 200 hours. The paper uses the same data pre-processing steps as a set of standard models in MIMIC-III \cite{dataprocessing} to build 34 time-series features using the same 17 clinical measurements. 
 
 \subsection{Hyperparameters}
-Describe how you set the hyperparameters and what the source was for their value (e.g. paper, code or your guess). 
+\begin{itemize}
+\item Density-aware component $\bigtriangleup_c = \frac{K}{|N_c|^{1/4}}$ for $c \in \{1,...,|C|\}$
+where $K$ is a hyper-parameter and $|N_c|$ is number of examples in class $c$.
+
+\item Relax the constrained problem as an unconstrained one and rewrite $C_{FN}$ = $\theta$ $C_{FP} + D $ where D is a regularization term, $\theta$ is a hyper-parameter, $C_{FP}$ is a type I error, and $C_{FN}$ is a type II error in the confusion matrix. Notice that the trainable confusion matrix is only applicable for a binary classification problem. 
+\end{itemize}
+
+\subsection{Ablation Study}
+In the paper, two new components are introduced: decoupling the training and a loss function that takes into account the density of the data. The paper suggests using the same architecture - flexEHR or GRU. Specifically, one GRU as a baseline, one GRU with the trainable cost matrix, one GRU with the decoupling method, and one GRU with both the decoupling method and the trainable cost matrix. In the ablation study, the AUC-ROC does not change significantly, but the AUC-PRC and BSS improve significantly. However, GRU-decoupling has poor calibrated range compared to the combined framework.  
 
 \subsection{Implementation}
-Describe whether you use the existing code or write your own code, with the link to the code. Note that the github repo you link to should be public and have a clear documentation.
+I plan to use the code from Homework 2,3 and 4 as my code for the project. I also plan to read the original paper that proposes the main backbone architecture - flexEHR. 
 
 \subsection{Computational requirements}
-Provide information on computational requirements for each of your experiments. For example, the number of CPU/GPU hours and memory requirements.
-Mention both your estimation made before running the experiments (i.e. in the proposal) and the actual resources you used to reproducing the experiments. 
-\textbf{\textit{You'll need to think about this ahead of time, and write your code in a way that captures this information so you can later add it to this section.} }
+I plan to use paperspace to run the code on a P5000 30GB 8CPU 16 GiB GPU. It costs 8\$ per month to borrow several machines with similar computing power. 
 
 \section{Results}
 Start with a high-level overview of your results. Does your work support the claims you listed in section 2.1? Keep this section as factual and precise as possible, reserve your judgement and discussion points for the next ``Discussion'' section. 
@@ -154,4 +168,3 @@ Document the extent of (or lack of) communication with the original authors. To 
 
 
 \end{document}
-
