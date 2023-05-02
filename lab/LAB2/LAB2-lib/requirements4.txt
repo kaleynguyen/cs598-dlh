@@ -1,5 +1,0 @@
-# Stage 4:
-# Normal Pypi index packages that depend on PyTorch (including
-# torch-geometric). Official PyTorch packages must be installed before this.
-
-torch-geometric

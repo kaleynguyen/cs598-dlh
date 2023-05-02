@@ -1,5 +1,0 @@
-# Stage 1: Normal Pypi index packages that have no reliance on PyTorch.
-# The Dockerfiles also may have specified some initial packages.
-
-nltk
-jinja2==3.0.2
