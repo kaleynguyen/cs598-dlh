@@ -1,0 +1,43 @@
+---
+ops:
+  admissions:
+    config:
+      data_path: "/Users/kaleynguyen/Desktop/mimiciii-data/data"
+      time_h: 48
+
+  filtered_chartevents:
+    config:
+      data_path: "/Users/kaleynguyen/Desktop/mimiciii-data/data"
+      time_h: 48
+
+  filtered_labevents:
+    config:
+      data_path: "/Users/kaleynguyen/Desktop/mimiciii-data/data"
+      time_h: 48
+
+  filtered_outputevents:
+    config:
+      data_path: "/Users/kaleynguyen/Desktop/mimiciii-data/data"
+      time_h: 48
+
+  filtered_patients:
+    config:
+      data_path: "/Users/kaleynguyen/Desktop/mimiciii-data/data"
+      time_h: 48
+
+  icustays:
+    config:
+      data_path: "/Users/kaleynguyen/Desktop/mimiciii-data/data"
+      time_h: 48
+
+  patients:
+    config:
+      data_path: "/Users/kaleynguyen/Desktop/mimiciii-data/data"
+      time_h: 48
+
+  allevents_by_episode:
+    config:
+      data_path: ""
+      time_h: 48
+
+

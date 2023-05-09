@@ -1,0 +1,104 @@
+Table patients {
+row_id Int32
+subject_id Int32
+gender Utf8
+dob Datetime(time_unit='ns', time_zone=None)
+dod Datetime(time_unit='ns', time_zone=None)
+dod_hosp Datetime(time_unit='ns', time_zone=None)
+dod_ssn Datetime(time_unit='ns', time_zone=None)
+expire_flag Int32
+}
+
+
+Table chartevents {
+row_id Int32
+subject_id Int32
+hadm_id Int32
+icustay_id Int32
+itemid Int32
+charttime Datetime(time_unit='ns', time_zone=None)
+storetime Datetime(time_unit='ns', time_zone=None)
+cgid Int32
+value Utf8
+valuenum Float64
+valueuom Utf8
+warning Int32
+error Int32
+resultstatus Utf8
+stopped Utf8
+}
+
+
+Table icustays {
+row_id Int32
+subject_id Int32
+hadm_id Int32
+icustay_id Int32
+dbsource Utf8
+first_careunit Utf8
+last_careunit Utf8
+first_wardid Int16
+last_wardid Int16
+intime Datetime(time_unit='ns', time_zone=None)
+outtime Datetime(time_unit='ns', time_zone=None)
+los Float64
+}
+
+
+
+Table admissions {
+row_id Int32
+subject_id Int32
+hadm_id Int32
+admittime Datetime(time_unit='ns', time_zone=None)
+dischtime Datetime(time_unit='ns', time_zone=None)
+deathtime Datetime(time_unit='ns', time_zone=None)
+admission_type Utf8
+admission_location Utf8
+discharge_location Utf8
+insurance Utf8
+language Utf8
+religion Utf8
+marital_status Utf8
+ethnicity Utf8
+edregtime Datetime(time_unit='ns', time_zone=None)
+edouttime Datetime(time_unit='ns', time_zone=None)
+diagnosis Utf8
+hospital_expire_flag Int16
+has_chartevents_data Int16
+}
+
+
+
+Table labevents {
+row_id Int32
+subject_id Int32
+hadm_id Int32
+itemid Int32
+charttime Datetime(time_unit='ns', time_zone=None)
+value Utf8
+valuenum Float64
+valueuom Utf8
+flag Utf8
+}
+
+
+
+Table outputevents {
+row_id Int32
+subject_id Int32
+hadm_id Int32
+icustay_id Int32
+charttime Datetime(time_unit='ns', time_zone=None)
+itemid Int32
+value Float64
+valueuom Utf8
+storetime Datetime(time_unit='ns', time_zone=None)
+cgid Int32
+stopped Utf8
+newbottle Utf8
+iserror Int32
+}
+
+
+
